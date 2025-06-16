@@ -40,8 +40,7 @@ app.post('/analyze', async (req, res) => {
           content: text,
         },
       ],
-      model: 'mixtral-8x7b-32768',
-    });
+model: 'llama3-8b-8192',    });
 
     const analysisResult = chatCompletion.choices[0]?.message?.content || 'No result';
     res.json({ analysis: analysisResult });
