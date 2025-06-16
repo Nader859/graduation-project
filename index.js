@@ -29,18 +29,20 @@ app.post('/analyze', async (req, res) => {
   }
 
   try {
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
+const chatCompletion = await groq.chat.completions.create({
+    messages: [
         {
-          role: 'system',
-          content: 'You are a helpful AI assistant specialized in analyzing medical lab reports for a user in the Middle East. Your task is to provide a simplified explanation and general recommendations in clear, easy-to-understand Arabic. Focus on values that are out of the normal range. IMPORTANT: DO NOT provide a medical diagnosis. Only recommend consulting a doctor for significantly abnormal values. Start your response with a clear summary.',
+            role: 'system',
+            content: 'You are an expert AI assistant for analyzing medical lab reports. Your response MUST be in well-formatted Arabic markdown. Use bullet points for recommendations (using - or *). Use bold text for titles or important terms (using **term**). Go straight to the analysis without any introductory or concluding pleasantries like "Hello" or "I hope this helps".',
         },
         {
-          role: 'user',
-          content: text,
+            role: 'user',
+            content: text,
         },
-      ],
-model: 'llama3-8b-8192',    });
+    ],
+    // استخدم النموذج الذي تفضله بالاسم الصحيح على Groq
+    model: 'mistral-7b-instruct', 
+});
 
     const analysisResult = chatCompletion.choices[0]?.message?.content || 'No result';
     res.json({ analysis: analysisResult });
