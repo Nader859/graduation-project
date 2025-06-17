@@ -41,7 +41,7 @@ const chatCompletion = await groq.chat.completions.create({
         },
     ],
     // استخدم النموذج الذي تفضله بالاسم الصحيح على Groq
-    model: 'mistral-7b-instruct', 
+    model: 'llama3-8b-8192', 
 });
 
     const analysisResult = chatCompletion.choices[0]?.message?.content || 'No result';
