@@ -51,7 +51,46 @@ const chatCompletion = await groq.chat.completions.create({
     res.status(500).json({ error: 'Failed to analyze text' });
   }
 });
+// ▼▼▼ أضف هذا الكود الجديد هنا ▼▼▼
+app.post('/compare', async (req, res) => {
+  // نستقبل مصفوفة من نصوص التحاليل من التطبيق
+  const { analysesTexts } = req.body;
 
+  // نتأكد من أننا استقبلنا تحليلين على الأقل
+  if (!analysesTexts || !Array.isArray(analysesTexts) || analysesTexts.length < 2) {
+    return res.status(400).json({ error: 'Please provide at least two analyses to compare.' });
+  }
+
+  // نجمع النصوص مع فواصل لتكون واضحة للـ AI
+  const combinedText = analysesTexts.map((text, index) => {
+    return `--- التحليل رقم ${index + 1} ---\n${text}\n\n`;
+  }).join('');
+
+  try {
+    // نرسل الطلب لنموذج الذكاء الاصطناعي مع تعليمات جديدة خاصة بالمقارنة
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert AI assistant for comparing medical lab reports. The user will provide you with several reports separated by "---". Your task is to: 1. Compare the similar tests across the reports. 2. Highlight any trends, improvements, or deteriorations in the values. 3. Provide a clear, concise summary of the changes in well-formatted Arabic markdown. Use bullet points and bold text.',
+        },
+        {
+          role: 'user',
+          content: combinedText,
+        },
+      ],
+      model: 'llama3-8b-8192', // استخدام نفس النموذج المتاح حالياً
+    });
+
+    const comparisonResult = chatCompletion.choices[0]?.message?.content || 'No comparison result';
+    res.json({ comparison: comparisonResult });
+
+  } catch (error) {
+    console.error('Error during comparison:', error);
+    res.status(500).json({ error: 'Failed to get comparison' });
+  }
+});
+// ▲▲▲ نهاية الكود الجديد ▲▲▲
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
