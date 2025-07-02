@@ -68,19 +68,19 @@ app.post('/compare', async (req, res) => {
 
   try {
     // نرسل الطلب لنموذج الذكاء الاصطناعي مع تعليمات جديدة خاصة بالمقارنة
-// The old code block for /compare
+// The new code block for /compare
 const chatCompletion = await groq.chat.completions.create({
     messages: [
         {
             role: 'system',
-            content: 'You are an expert AI assistant for comparing medical lab reports. Your response MUST be in well-formatted Arabic markdown and contain ONLY two sections: a "Comparison" section and a "Recommendations" section...',
+            content: 'You are a meticulous medical laboratory AI assistant. Your task is to compare the provided lab reports and respond ONLY in clear, professional, well-formatted Arabic markdown. Your response must be structured with ONLY two headings: "**المقارنة:**" and "**التوصيات:**". Do not add any extra text, greetings, or closing remarks. Focus on trends and significant changes.',
         },
         {
             role: 'user',
             content: combinedText,
         },
     ],
-    model: 'llama3-8b-8192',
+    model: 'mixtral-8x7b-32768', // <-- النموذج الجديد والأقوى
 });
 
     const comparisonResult = chatCompletion.choices[0]?.message?.content || 'No comparison result';
