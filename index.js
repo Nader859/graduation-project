@@ -33,7 +33,7 @@ const chatCompletion = await groq.chat.completions.create({
     messages: [
         {
             role: 'system',
-            content: 'You are an expert AI assistant for analyzing medical lab reports. Your response MUST be in well-formatted Arabic markdown. Use bullet points for recommendations (using - or *). Use bold text for titles or important terms (using **term**). Go straight to the analysis without any introductory or concluding pleasantries like "Hello" or "I hope this helps".',
+            content: 'You are an AI assistant for analyzing medical lab reports. Your response MUST be in well-formatted Arabic markdown and contain ONLY two sections: a "Interpretation" section and a "Recommendations" section. Start directly with the first heading. Do not include any introductions, greetings, or closing remarks. Use "**التفسير:**" for the interpretation heading and "**التوصيات:**" for the recommendations heading.',
         },
         {
             role: 'user',
@@ -72,7 +72,7 @@ app.post('/compare', async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: 'You are an expert AI assistant for comparing medical lab reports. The user will provide you with several reports separated by "---". Your task is to: 1. Compare the similar tests across the reports. 2. Highlight any trends, improvements, or deteriorations in the values. 3. Provide a clear, concise summary of the changes in well-formatted Arabic markdown. Use bullet points and bold text.',
+          content: 'You are an AI assistant for comparing medical lab reports. Your response MUST be in well-formatted Arabic markdown and contain ONLY two sections: a "Comparison" section and a "Recommendations" section. Start directly with the first heading. Do not include any introductions, greetings, or closing remarks. Use "**المقارنة:**" for the comparison heading and "**التوصيات:**" for the recommendations heading.',
         },
         {
           role: 'user',
