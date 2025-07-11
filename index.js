@@ -15,7 +15,8 @@ const groq = new Groq({
 });
 
 // تحديد النموذج الذي سنستخدمه (نموذج Mixtral قوي جداً على Groq)
-const MODEL_NAME = 'mixtral-8x7b-32768';
+// Define the model we are using
+const MODEL_NAME = 'llama3-8b-8192';
 
 // --- نقطة النهاية لتحليل نص واحد ---
 app.post('/analyze', async (req, res) => {
