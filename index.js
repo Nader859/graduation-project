@@ -1,98 +1,83 @@
 const express = require('express');
-const Groq = require('groq-sdk');
+const { HfInference } = require('@huggingface/inference');
 const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// استخدام cors للسماح بالطلبات من أي مصدر
+// Middleware Setup
 app.use(cors());
 app.use(express.json());
 
-// تهيئة Groq
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+// Initialize Hugging Face client with the token from environment variables
+const hf = new HfInference(process.env.HF_TOKEN);
 
-// نقطة النهاية الرئيسية للتحقق من أن الخادم يعمل
-app.get('/', (req, res) => {
-  res.send('Lab Analysis API is running!');
-});
+// Define the model we are using
+const MODEL_NAME = 'llama3-8b-8192';
 
-// نقطة النهاية لتحليل النص
+// --- API Endpoint for Single Analysis ---
 app.post('/analyze', async (req, res) => {
   const { text } = req.body;
-
   if (!text) {
     return res.status(400).json({ error: 'Text is required' });
   }
 
   try {
-const chatCompletion = await groq.chat.completions.create({
-    messages: [
-        {
-            role: 'system',
-            content: 'You are an expert AI assistant for analyzing medical lab reports. Your response MUST be in well-formatted Arabic markdown. Use bullet points for recommendations (using - or *). Use bold text for titles or important terms (using **term**). Go straight to the analysis without any introductory or concluding pleasantries like "Hello" or "I hope this helps".',
-            content: 'You are an AI assistant for analyzing medical lab reports. Your response MUST be in well-formatted Arabic markdown and contain ONLY two sections: a "Interpretation" section and a "Recommendations" section. Start directly with the first heading. Do not include any introductions, greetings, or closing remarks. Use "**التفسير:**" for the interpretation heading and "**التوصيات:**" for the recommendations heading.',
-        },
-        {
-            role: 'user',
-            content: text,
-        },
-    ],
-    // استخدم النموذج الذي تفضله بالاسم الصحيح على Groq
-    model: 'llama3-8b-8192', 
-});
+    // Construct the precise prompt for the model
+    const prompt = `[INST] You are a meticulous medical laboratory AI assistant. Your task is to analyze the provided lab report text and respond ONLY in clear, professional, well-formatted Arabic markdown. Your response must be structured with ONLY two headings: "**التفسير:**" and "**التوصيات:**". Do not add any extra text, greetings, or closing remarks. Here is the lab report text: \n\n${text} [/INST]`;
 
-    const analysisResult = chatCompletion.choices[0]?.message?.content || 'No result';
-    res.json({ analysis: analysisResult });
+    const response = await hf.textGeneration({
+      model: MODEL_NAME,
+      inputs: prompt,
+      parameters: {
+        max_new_tokens: 1024,
+        temperature: 0.7,
+        return_full_text: false, // Important: prevents repeating the prompt in the answer
+      }
+    });
+
+    res.json({ analysis: response.generated_text });
+
   } catch (error) {
-    console.error('Error calling Groq API:', error);
+    console.error('Error during analysis:', error);
     res.status(500).json({ error: 'Failed to analyze text' });
   }
 });
-// ▼▼▼ أضف هذا الكود الجديد هنا ▼▼▼
+
+// --- API Endpoint for Comparing Analyses ---
 app.post('/compare', async (req, res) => {
-  // نستقبل مصفوفة من نصوص التحاليل من التطبيق
-  const { analysesTexts } = req.body;
+    const { analysesTexts } = req.body;
+    if (!analysesTexts || !Array.isArray(analysesTexts) || analysesTexts.length < 2) {
+        return res.status(400).json({ error: 'Please provide at least two analyses to compare.' });
+    }
 
-  // نتأكد من أننا استقبلنا تحليلين على الأقل
-  if (!analysesTexts || !Array.isArray(analysesTexts) || analysesTexts.length < 2) {
-    return res.status(400).json({ error: 'Please provide at least two analyses to compare.' });
-  }
+    const combinedText = analysesTexts.map((text, index) => {
+        return `--- Analysis ${index + 1} ---\n${text}\n\n`;
+    }).join('');
 
-  // نجمع النصوص مع فواصل لتكون واضحة للـ AI
-  const combinedText = analysesTexts.map((text, index) => {
-    return `--- التحليل رقم ${index + 1} ---\n${text}\n\n`;
-  }).join('');
+    try {
+        const prompt = `[INST] You are a meticulous medical laboratory AI assistant. Your task is to compare the provided lab reports and respond ONLY in clear, professional, well-formatted Arabic markdown. Your response must be structured with ONLY two headings: "**المقارنة:**" and "**التوصيات:**". Do not add any extra text, greetings, or closing remarks. Focus on trends and significant changes. Here are the lab reports:\n\n${combinedText} [/INST]`;
 
-  try {
-    // نرسل الطلب لنموذج الذكاء الاصطناعي مع تعليمات جديدة خاصة بالمقارنة
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert AI assistant for comparing medical lab reports. The user will provide you with several reports separated by "---". Your task is to: 1. Compare the similar tests across the reports. 2. Highlight any trends, improvements, or deteriorations in the values. 3. Provide a clear, concise summary of the changes in well-formatted Arabic markdown. Use bullet points and bold text.',
-          content: 'You are an AI assistant for comparing medical lab reports. Your response MUST be in well-formatted Arabic markdown and contain ONLY two sections: a "Comparison" section and a "Recommendations" section. Start directly with the first heading. Do not include any introductions, greetings, or closing remarks. Use "**المقارنة:**" for the comparison heading and "**التوصيات:**" for the recommendations heading.',
-        },
-        {
-          role: 'user',
-          content: combinedText,
-        },
-      ],
-      model: 'llama3-8b-8192', // استخدام نفس النموذج المتاح حالياً
-    });
+        const response = await hf.textGeneration({
+            model: MODEL_NAME,
+            inputs: prompt,
+            parameters: {
+                max_new_tokens: 1500, // Allow more tokens for comparison
+                temperature: 0.7,
+                return_full_text: false,
+            }
+        });
 
-    const comparisonResult = chatCompletion.choices[0]?.message?.content || 'No comparison result';
-    res.json({ comparison: comparisonResult });
+        res.json({ comparison: response.generated_text });
 
-  } catch (error) {
-    console.error('Error during comparison:', error);
-    res.status(500).json({ error: 'Failed to get comparison' });
-  }
+    } catch (error) {
+        console.error('Error during comparison:', error);
+        res.status(500).json({ error: 'Failed to get comparison' });
+    }
 });
-// ▲▲▲ نهاية الكود الجديد ▲▲▲
+
+// Start the server
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
