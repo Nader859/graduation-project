@@ -29,19 +29,20 @@ app.post('/analyze', async (req, res) => {
   }
 
   try {
-// The new code block for /analyze
 const chatCompletion = await groq.chat.completions.create({
     messages: [
         {
             role: 'system',
-            content: 'You are a meticulous medical laboratory AI assistant. Your task is to analyze the provided lab report text and respond ONLY in clear, professional, well-formatted Arabic markdown. Your response must be structured with ONLY two headings: "**التفسير:**" and "**التوصيات:**". Do not add any extra text, greetings, or closing remarks. Be accurate and concise.',
+            content: 'You are an expert AI assistant for analyzing medical lab reports. Your response MUST be in well-formatted Arabic markdown. Use bullet points for recommendations (using - or *). Use bold text for titles or important terms (using **term**). Go straight to the analysis without any introductory or concluding pleasantries like "Hello" or "I hope this helps".',
+            content: 'You are an AI assistant for analyzing medical lab reports. Your response MUST be in well-formatted Arabic markdown and contain ONLY two sections: a "Interpretation" section and a "Recommendations" section. Start directly with the first heading. Do not include any introductions, greetings, or closing remarks. Use "**التفسير:**" for the interpretation heading and "**التوصيات:**" for the recommendations heading.',
         },
         {
             role: 'user',
             content: text,
         },
     ],
-    model: 'mixtral-8x7b-32768', // <-- النموذج الجديد والأقوى
+    // استخدم النموذج الذي تفضله بالاسم الصحيح على Groq
+    model: 'llama3-8b-8192', 
 });
 
     const analysisResult = chatCompletion.choices[0]?.message?.content || 'No result';
@@ -68,23 +69,20 @@ app.post('/compare', async (req, res) => {
 
   try {
     // نرسل الطلب لنموذج الذكاء الاصطناعي مع تعليمات جديدة خاصة بالمقارنة
-// The old code block for /compare
-// The new code block for /compare
-const chatCompletion = await groq.chat.completions.create({
-    messages: [
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
         {
-            role: 'system',
-            content: 'You are an expert AI assistant for comparing medical lab reports. Your response MUST be in well-formatted Arabic markdown and contain ONLY two sections: a "Comparison" section and a "Recommendations" section...',
-            content: 'You are a meticulous medical laboratory AI assistant. Your task is to compare the provided lab reports and respond ONLY in clear, professional, well-formatted Arabic markdown. Your response must be structured with ONLY two headings: "**المقارنة:**" and "**التوصيات:**". Do not add any extra text, greetings, or closing remarks. Focus on trends and significant changes.',
+          role: 'system',
+          content: 'You are an expert AI assistant for comparing medical lab reports. The user will provide you with several reports separated by "---". Your task is to: 1. Compare the similar tests across the reports. 2. Highlight any trends, improvements, or deteriorations in the values. 3. Provide a clear, concise summary of the changes in well-formatted Arabic markdown. Use bullet points and bold text.',
+          content: 'You are an AI assistant for comparing medical lab reports. Your response MUST be in well-formatted Arabic markdown and contain ONLY two sections: a "Comparison" section and a "Recommendations" section. Start directly with the first heading. Do not include any introductions, greetings, or closing remarks. Use "**المقارنة:**" for the comparison heading and "**التوصيات:**" for the recommendations heading.',
         },
         {
-            role: 'user',
-            content: combinedText,
+          role: 'user',
+          content: combinedText,
         },
-    ],
-    model: 'llama3-8b-8192',
-    model: 'mixtral-8x7b-32768', // <-- النموذج الجديد والأقوى
-});
+      ],
+      model: 'llama3-8b-8192', // استخدام نفس النموذج المتاح حالياً
+    });
 
     const comparisonResult = chatCompletion.choices[0]?.message?.content || 'No comparison result';
     res.json({ comparison: comparisonResult });
