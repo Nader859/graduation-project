@@ -1,5 +1,5 @@
 {
-  "name": "lab-analysis-server",
+  "name": "lab-analysis-server-final",
   "version": "1.0.0",
   "description": "API server for lab analysis using Hugging Face",
   "main": "index.js",
