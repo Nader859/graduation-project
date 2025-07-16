@@ -9,16 +9,12 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// تهيئة Groq باستخدام المفتاح من متغيرات البيئة
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY,
 });
 
-// تحديد النموذج الذي سنستخدمه (نموذج Mixtral قوي جداً على Groq)
-// Define the model we are using
 const MODEL_NAME = 'mistral-saba-24b';
 
-// --- نقطة النهاية لتحليل نص واحد ---
 app.post('/analyze', async (req, res) => {
     const { text } = req.body;
     if (!text) {
@@ -30,7 +26,19 @@ app.post('/analyze', async (req, res) => {
             messages: [
                 {
                     role: 'system',
-                    content: 'You are a meticulous medical laboratory AI assistant. Your task is to analyze the provided lab report text and respond ONLY in clear, professional, well-formatted Arabic markdown. Your response must be structured with ONLY two headings: "**التفسير:**" and "**التوصيات:**". Do not add any extra text, greetings, or closing remarks.',
+                    content: `أنت مساعد مختبر طبي محترف ودقيق للغاية. هدفك هو تحليل نتائج الفحوصات المخبرية بدقة استنادًا إلى القيم المذكورة.
+التعليمات:
+1. حدد القيم الخارجة عن النطاق الطبيعي بوضوح.
+2. استخدم لغة عربية رسمية ومهنية فقط.
+3. لا تضف أي مقدمات أو عبارات ترحيبية أو ختامية.
+4. إذا كانت المعلومات غير مكتملة، اذكر ذلك بوضوح.
+5. يجب أن يحتوي الرد فقط على:
+
+**التفسير:**
+- (تفاصيل دقيقة)
+
+**التوصيات:**
+- (تفاصيل دقيقة)`
                 },
                 {
                     role: 'user',
@@ -38,6 +46,7 @@ app.post('/analyze', async (req, res) => {
                 },
             ],
             model: MODEL_NAME,
+            temperature: 0,
         });
 
         res.json({ analysis: chatCompletion.choices[0]?.message?.content || '' });
@@ -47,7 +56,6 @@ app.post('/analyze', async (req, res) => {
     }
 });
 
-// --- نقطة النهاية لمقارنة عدة نصوص ---
 app.post('/compare', async (req, res) => {
     const { analysesTexts } = req.body;
     if (!analysesTexts || !Array.isArray(analysesTexts) || analysesTexts.length < 2) {
@@ -63,7 +71,19 @@ app.post('/compare', async (req, res) => {
             messages: [
                 {
                     role: 'system',
-                    content: 'You are a meticulous medical laboratory AI assistant. Your task is to compare the provided lab reports and respond ONLY in clear, professional, well-formatted Arabic markdown. Your response must be structured with ONLY two headings: "**المقارنة:**" and "**التوصيات:**". Do not add any extra text, greetings, or closing remarks. Focus on trends and significant changes.',
+                    content: `أنت مساعد مختبر طبي محترف ودقيق للغاية. هدفك هو مقارنة نتائج الفحوصات المخبرية بدقة.
+التعليمات:
+1. ركز على الاتجاهات والفروقات بين النتائج.
+2. استخدم لغة عربية رسمية ومهنية فقط.
+3. لا تضف أي مقدمات أو عبارات ترحيبية أو ختامية.
+4. إذا كانت المعلومات غير كافية، اذكر ذلك.
+5. يجب أن يحتوي الرد فقط على:
+
+**المقارنة:**
+- (تفاصيل دقيقة)
+
+**التوصيات:**
+- (تفاصيل دقيقة)`
                 },
                 {
                     role: 'user',
@@ -71,6 +91,7 @@ app.post('/compare', async (req, res) => {
                 },
             ],
             model: MODEL_NAME,
+            temperature: 0,
         });
 
         res.json({ comparison: chatCompletion.choices[0]?.message?.content || '' });
@@ -80,7 +101,6 @@ app.post('/compare', async (req, res) => {
     }
 });
 
-// Start the server
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
 });
