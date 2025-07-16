@@ -13,7 +13,7 @@ app.use(express.json());
 const hf = new HfInference(process.env.HF_TOKEN);
 
 // تحديد اسم النموذج الذي تريده بالضبط
-const MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2";
+const MODEL_NAME = "meta-llama/Meta-Llama-3-8B-Instruct";
 
 // نقطة النهاية لتحليل نص واحد
 app.post('/analyze', async (req, res) => {
